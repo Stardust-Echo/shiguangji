@@ -115,6 +115,8 @@
   .nchip:hover{border-color:var(--primary)}
   .nchip.on{background:var(--primary);border-color:var(--primary);color:#fff}
   .ntag{display:inline-block;margin-top:5px;padding:2px 9px;border-radius:10px;font-size:11px;background:rgba(94,167,139,.16);color:#4E8970;border:1px solid rgba(94,167,139,.28)}
+  .nchip.add{background:var(--surface-2);border:1px dashed var(--primary);color:var(--primary);font-weight:700;min-width:34px;text-align:center}
+  .nchip.add:hover{background:var(--primary);color:#fff}
 
   .seg{display:flex;background:var(--surface-3);border:1px solid var(--line);border-radius:13px;padding:3px;gap:3px}
   .seg button{flex:1;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;padding:9px;border-radius:10px;cursor:pointer;transition:.15s;min-height:42px}
@@ -282,7 +284,7 @@ const moodOf = lv => MOODS.find(m=>m.lv===lv) || MOODS[2];
 
 let state = load();
 function load(){ try{ const r=localStorage.getItem(DB_KEY); if(r){ return Object.assign(defaultState(), JSON.parse(r)); } }catch(e){} return defaultState(); }
-function defaultState(){ return { expenses:[], tasks:[], notes:[], moods:[], habits:[], journal:[], settings:{theme:"light", name:"", budget:0} }; }
+function defaultState(){ return { expenses:[], tasks:[], notes:[], moods:[], habits:[], journal:[], noteCats:[{id:"idea",t:"灵感"},{id:"todo",t:"待办"},{id:"work",t:"工作"},{id:"life",t:"生活"},{id:"misc",t:"随笔"}], settings:{theme:"light", name:"", budget:0} }; }
 function save(){ localStorage.setItem(DB_KEY, JSON.stringify(state)); }
 
 /* ============ 工具 ============ */
@@ -295,9 +297,22 @@ function monthKey(d=new Date()){ return d.getFullYear()+"-"+String(d.getMonth()+
 function money(n){ return (n<0?"-":"")+"¥"+Math.abs(n).toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2}); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 let toastTimer;
-const NOTE_CATS=[{k:"idea",t:"灵感"},{k:"todo",t:"待办"},{k:"work",t:"工作"},{k:"life",t:"生活"},{k:"misc",t:"随笔"}];
-const noteCatName=k=>(NOTE_CATS.find(c=>c.k===k)||{}).t||"未分类";
+const noteCatName=k=>(state.noteCats.find(c=>c.id===k)||{}).t||"未分类";
 let noteCatFilter="";
+function addNoteCat(name){
+  const t=(name||"").trim(); if(!t){ return null; }
+  const exist=state.noteCats.find(c=>c.t===t);
+  if(exist){ toast("已有同名分类"); return exist.id; }
+  const id="c_"+uid();
+  state.noteCats.push({id,t}); save();
+  return id;
+}
+function refreshNoteCatsUI(){
+  const sel=$("#noteCat"); if(sel){ const cur=sel.value;
+    sel.innerHTML='<option value="">未分类</option>'+state.noteCats.map(c=>'<option value="'+c.id+'"'+(c.id===cur?" selected":"")+'>'+esc(c.t)+'</option>').join("")+'<option value="__new__">＋ 新建分类…</option>'; }
+  const nc=$("#nChips"); if(nc){ const f=noteCatFilter;
+    nc.innerHTML='<span class="nchip'+(f===""?" on":"")+'" data-ncat="">全部</span>'+state.noteCats.map(c=>'<span class="nchip'+(f===c.id?" on":"")+'" data-ncat="'+c.id+'">'+esc(c.t)+'</span>').join("")+'<span class="nchip add" data-ncat-add="1" role="button" tabindex="0" aria-label="新建分类">＋</span>'; }
+}
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
 function greeting(){ const h=new Date().getHours(); return h<6?"夜深了":h<11?"早安":h<14?"午安":h<18?"下午好":"晚上好"; }
 
@@ -489,13 +504,13 @@ VIEWS.task=function(){
 };
 
 VIEWS.note=function(){
-  const catOpts='<option value="">未分类</option>'+NOTE_CATS.map(c=>'<option value="'+c.k+'">'+c.t+'</option>').join("");
+  const catOpts='<option value="">未分类</option>'+state.noteCats.map(c=>'<option value="'+c.id+'">'+esc(c.t)+'</option>').join("")+'<option value="__new__">＋ 新建分类…</option>';
   const form='<div class="card"><h2>'+icon("plus")+' 新便签</h2>'
     +'<div class="field"><select id="noteCat">'+catOpts+'</select></div>'
     +'<div class="field"><textarea id="noteText" placeholder="随时记下想法、灵感、待办碎念…"></textarea></div>'
     +'<button class="btn" id="noteSave">保存便签</button></div>';
   const search='<div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="noteSearch" placeholder="搜索便签…"/></div>';
-  const chips='<div class="nchips" id="nChips"><span class="nchip'+(noteCatFilter===""?" on":"")+'" data-ncat="">全部</span>'+NOTE_CATS.map(c=>'<span class="nchip'+(noteCatFilter===c.k?" on":"")+'" data-ncat="'+c.k+'">'+c.t+'</span>').join("")+'</div>';
+  const chips='<div class="nchips" id="nChips"><span class="nchip'+(noteCatFilter===""?" on":"")+'" data-ncat="">全部</span>'+state.noteCats.map(c=>'<span class="nchip'+(noteCatFilter===c.id?" on":"")+'" data-ncat="'+c.id+'">'+esc(c.t)+'</span>').join("")+'<span class="nchip add" data-ncat-add="1" role="button" tabindex="0" aria-label="新建分类">＋</span></div>';
   const card='<div class="card"><h2>全部便签 <span class="pill" id="noteCount">'+state.notes.length+'</span></h2><div id="noteList"></div></div>';
   return form+search+chips+card;
 };
@@ -659,9 +674,10 @@ function bindView(){
   document.querySelectorAll("[data-toggle-task]").forEach(b=>{ b.onclick=()=>{ const t=state.tasks.find(x=>x.id===b.dataset.toggleTask); if(t){t.done=!t.done; save(); render();} }; b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); b.click(); } }; });
   document.querySelectorAll("[data-del-task]").forEach(b=>b.onclick=()=>{ state.tasks=state.tasks.filter(x=>x.id!==b.dataset.delTask); save(); render(); });
 
-  if($("#noteSave")){ $("#noteSave").onclick=()=>{ const v=$("#noteText").value.trim(); if(!v){toast("便签是空的");return;} const cat=$("#noteCat").value; state.notes.push({id:uid(),text:v,cat:cat||undefined,ts:Date.now()}); noteCatFilter=""; save(); toast("便签已保存"); render(); }; }
+  if($("#noteSave")){ $("#noteSave").onclick=()=>{ const v=$("#noteText").value.trim(); if(!v){toast("便签是空的");return;} const cat=$("#noteCat").value; if(cat==="__new__"){ const id=addNoteCat(prompt("新分类名称：")); if(!id){toast("未创建分类");return;} refreshNoteCatsUI(); $("#noteCat").value=id; return; } state.notes.push({id:uid(),text:v,cat:cat||undefined,ts:Date.now()}); noteCatFilter=""; save(); toast("便签已保存"); render(); }; }
+  const ncSel=$("#noteCat"); if(ncSel){ ncSel.onchange=()=>{ if(ncSel.value==="__new__"){ const id=addNoteCat(prompt("新分类名称：")); if(id){ refreshNoteCatsUI(); ncSel.value=id; } else { ncSel.value=""; } } }; }
   if($("#noteSearch")){ const ns=$("#noteSearch"); ns.oninput=()=>renderNoteList(ns.value.trim()); renderNoteList(""); }
-  const nc=$("#nChips"); if(nc){ nc.onclick=e=>{ const c=e.target.closest("[data-ncat]"); if(!c) return; noteCatFilter=c.dataset.ncat; nc.querySelectorAll(".nchip").forEach(x=>x.classList.toggle("on", x.dataset.ncat===noteCatFilter)); renderNoteList($("#noteSearch")?$("#noteSearch").value.trim():""); }; }
+  const nc=$("#nChips"); if(nc){ nc.onclick=e=>{ const add=e.target.closest("[data-ncat-add]"); if(add){ const id=addNoteCat(prompt("新分类名称：")); if(id){ refreshNoteCatsUI(); toast("已新建分类"); } return; } const c=e.target.closest("[data-ncat]"); if(!c) return; noteCatFilter=c.dataset.ncat; nc.querySelectorAll(".nchip").forEach(x=>x.classList.toggle("on", x.dataset.ncat===noteCatFilter)); renderNoteList($("#noteSearch")?$("#noteSearch").value.trim():""); }; }
   document.querySelectorAll("[data-del-note]").forEach(b=>b.onclick=()=>{ state.notes=state.notes.filter(x=>x.id!==b.dataset.delNote); save(); if($("#noteSearch")) renderNoteList($("#noteSearch").value.trim()); else render(); });
 
   const mp=$("#moodPick"); if(mp){ let lv=3;

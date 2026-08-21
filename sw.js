@@ -1,4 +1,4 @@
-const CACHE = "shiguangji-v1";
+const CACHE = "shiguangji-v3"; // 每次重大升级 +1，强制浏览器拿新版
 const ASSETS = ["index.html", "manifest.webmanifest"];
 
 self.addEventListener("install", e => {
