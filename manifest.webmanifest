@@ -1,0 +1,19 @@
+{
+  "name": "拾光记 · 记录",
+  "short_name": "拾光记",
+  "description": "一款移动端优先的个人记录软件：记账、任务、便签、心情、习惯、日记与数据统计。",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F2EC",
+  "theme_color": "#3E7C6A",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='44' fill='%233E7C6A'/%3E%3Ctext x='96' y='128' font-size='104' text-anchor='middle' fill='%23fff' font-family='sans-serif'%3E拾%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

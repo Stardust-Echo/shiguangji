@@ -1,0 +1,8 @@
+{
+  "appId": "com.qingchen.shiguangji",
+  "appName": "拾光记",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
